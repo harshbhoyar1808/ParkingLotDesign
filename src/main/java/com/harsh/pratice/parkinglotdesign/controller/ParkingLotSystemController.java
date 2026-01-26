@@ -1,9 +1,6 @@
 package com.harsh.pratice.parkinglotdesign.controller;
 
-import com.harsh.pratice.parkinglotdesign.model.ParkingSlot;
-import com.harsh.pratice.parkinglotdesign.model.SpotDetails;
-import com.harsh.pratice.parkinglotdesign.model.Ticket;
-import com.harsh.pratice.parkinglotdesign.model.Vehicle;
+import com.harsh.pratice.parkinglotdesign.model.*;
 import com.harsh.pratice.parkinglotdesign.service.ParkingLotDesignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +26,7 @@ public class ParkingLotSystemController {
     @PostMapping(
             value = "/billTicket"
     )
-    public ResponseEntity<Integer> getBillingService( @RequestBody final Ticket ticket){
+    public ResponseEntity<Bill> getBillingService(@RequestBody final Ticket ticket){
         final var amount = parkingLotDesignService.registerVehicleExit(ticket);
         return ResponseEntity.ok(amount);
     }

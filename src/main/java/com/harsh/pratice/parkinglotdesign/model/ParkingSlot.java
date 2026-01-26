@@ -1,5 +1,6 @@
 package com.harsh.pratice.parkinglotdesign.model;
 import lombok.Data;
+import lombok.NonNull;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -7,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ParkingSlot {
     private int slotNumber;
     private boolean isOccupied;
+    @NonNull
     private AtomicReference<Vehicle> parkedVehicle = new AtomicReference<>(null);
     public ParkingSlot(int slotNumber) {
         this.slotNumber = slotNumber;

@@ -1,6 +1,7 @@
 package com.harsh.pratice.parkinglotdesign.service;
 
 import com.harsh.pratice.parkinglotdesign.factory.ParkingLotManagerFactory;
+import com.harsh.pratice.parkinglotdesign.model.Bill;
 import com.harsh.pratice.parkinglotdesign.model.SpotDetails;
 import com.harsh.pratice.parkinglotdesign.model.Ticket;
 import com.harsh.pratice.parkinglotdesign.model.Vehicle;
@@ -15,6 +16,7 @@ import java.util.Objects;
 public class ParkingLotDesignService {
 
     private final CostCalculator costCalculator = new CostCalculator();
+    private final ValidateTicket validateTicket = new ValidateTicket();
 
     public Ticket registerVehicleEntry(final Vehicle vehicle) {
         // Get the parking slot manager as per vehicle type,
@@ -35,19 +37,23 @@ public class ParkingLotDesignService {
 
         return ticket;
     }
-    public int registerVehicleExit(final Ticket ticket) {
+    public Bill registerVehicleExit(final Ticket ticket) {
         //get the parking slot manager as per vehicle type from ticket
         final var parkingLotManager = ParkingLotManagerFactory.getParkingLotManager(ticket.getParkingSlot().getParkedVehicle().get());
-        //get the total parking time from ticket
-        final var totalTime = Duration.between(ticket.getInTime(), LocalDateTime.now());
+        double amount= -1;
+        String message = "Invalid Ticket";
+        if( validateTicket.validateTicket(ticket, parkingLotManager)) {
+            //get the total parking time from ticket
+            final var totalTime = Duration.between(ticket.getInTime(), LocalDateTime.now());
 
-        // calculate the amount to be paid
-        final var amount = costCalculator.calculateCost(ticket.getParkingSlot().getParkedVehicle().get().getVehicleType(), totalTime);
-        // free the slot
-        parkingLotManager.releaseParkingSpot(ticket.getParkingSlot().getSlotNumber());
+            // calculate the amount to be paid
+             amount = costCalculator.calculateCost(ticket.getParkingSlot().getParkedVehicle().get().getVehicleType(), totalTime);
+             message = "Please pay the amount: ";
+            // free the slot
+            parkingLotManager.releaseParkingSpot(ticket.getParkingSlot().getSlotNumber());
+        }
 
-
-        return amount;
+        return new Bill(amount, message);
     }
 
     public SpotDetails getParkingLotStatus() {
