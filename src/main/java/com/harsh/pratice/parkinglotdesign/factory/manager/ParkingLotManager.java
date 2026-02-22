@@ -1,5 +1,6 @@
 package com.harsh.pratice.parkinglotdesign.factory.manager;
 
+import com.harsh.pratice.parkinglotdesign.model.ParkingLotStatus;
 import com.harsh.pratice.parkinglotdesign.model.ParkingSlot;
 import com.harsh.pratice.parkinglotdesign.model.Vehicle;
 
@@ -9,6 +10,7 @@ public interface ParkingLotManager {
     int getParkingSpot();
     boolean releaseParkingSpot(int spotNumber);
     ParkingSlot registerParkingSpot(int spotNumber, Vehicle vehicle);
-    List<ParkingSlot> getAllSpotsDetails();
-    ParkingSlot getSlotStatus(int spotNumber);
+    ParkingLotStatus getAllSpotsDetails();
+    List<ParkingSlot> getSlotStatus();
+    List<ParkingSlot> getSlotList();
 }

@@ -1,10 +1,12 @@
 package com.harsh.pratice.parkinglotdesign.factory.manager;
 
 
+import com.harsh.pratice.parkinglotdesign.model.ParkingLotStatus;
 import com.harsh.pratice.parkinglotdesign.model.ParkingSlot;
 import com.harsh.pratice.parkinglotdesign.model.Vehicle;
 import com.harsh.pratice.parkinglotdesign.model.VehicleType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class BikeSlotManager implements ParkingLotManager {
@@ -29,6 +31,7 @@ public class BikeSlotManager implements ParkingLotManager {
             if(spot.getSlotNumber() == spotNumber) {
                 spot.setOccupied(false);
                 spot.releaseVehicle();
+                spot.setIntime(null);
                 return true;
             }
         }
@@ -37,8 +40,12 @@ public class BikeSlotManager implements ParkingLotManager {
     @Override 
     public ParkingSlot registerParkingSpot(int spotNumber, Vehicle vehicle){
         for(ParkingSlot spot : parkingSlots) {
-            if(spot.getSlotNumber() == spotNumber) {
+            if (spot.getSlotNumber() == spotNumber) {
+                if (spot.isOccupied()) {
+                    throw new UnsupportedOperationException("Parking spot " + spotNumber + " is already occupied");
+                }
                 spot.setOccupied(true);
+                spot.setIntime(LocalDateTime.now().toString());
                 spot.occupy(vehicle);
                 return spot;
             }
@@ -47,16 +54,20 @@ public class BikeSlotManager implements ParkingLotManager {
     }
 
     @Override
-    public List<ParkingSlot> getAllSpotsDetails(){
-        return parkingSlots;
+    public ParkingLotStatus getAllSpotsDetails(){
+        final var totalSpots = parkingSlots.size();
+        final var occupiedSpots = parkingSlots.stream().filter(ParkingSlot::isOccupied).count();
+        final var availableSpots = totalSpots - occupiedSpots;
+
+        return new ParkingLotStatus(VehicleType.BIKE.name(), totalSpots, (int) occupiedSpots, (int) availableSpots);
     }
     @Override
-    public ParkingSlot getSlotStatus(int spotNumber) {
-        for (ParkingSlot spot : parkingSlots) {
-            if (spot.getSlotNumber() == spotNumber) {
-                return spot;
-            }
-        }
-        return new ParkingSlot();
+    public List<ParkingSlot> getSlotStatus() {
+        final var occupiedSpots = parkingSlots.stream().filter(ParkingSlot::isOccupied).toList();
+        return List.copyOf(occupiedSpots);
+    }
+    @Override
+    public List<ParkingSlot> getSlotList(){
+        return  this.parkingSlots;
     }
 }

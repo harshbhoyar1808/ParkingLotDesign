@@ -1,16 +1,12 @@
 package com.harsh.pratice.parkinglotdesign.service;
 
 import com.harsh.pratice.parkinglotdesign.factory.ParkingLotManagerFactory;
-import com.harsh.pratice.parkinglotdesign.model.Bill;
-import com.harsh.pratice.parkinglotdesign.model.SpotDetails;
-import com.harsh.pratice.parkinglotdesign.model.Ticket;
-import com.harsh.pratice.parkinglotdesign.model.Vehicle;
+import com.harsh.pratice.parkinglotdesign.model.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class ParkingLotDesignService {
@@ -19,12 +15,10 @@ public class ParkingLotDesignService {
     private final ValidateTicket validateTicket = new ValidateTicket();
 
     public Ticket registerVehicleEntry(final Vehicle vehicle) {
-        // Get the parking slot manager as per vehicle type,
-        // fetch a free slot ,if not then throw exception
-        //else create a ticket with entry time and slot details
+
         var parkingLotManager = ParkingLotManagerFactory.getParkingLotManager(vehicle);
         int slot = parkingLotManager.getParkingSpot();
-        if(Objects.isNull(slot) || slot <= 0) {
+        if(slot <= 0) {
             throw new IllegalStateException("No parking spot available");
         }
         // book the slot
@@ -33,44 +27,53 @@ public class ParkingLotDesignService {
         if(parkingSlot.getSlotNumber() == -1) {
             throw new IllegalStateException("Error in booking the slot");
         }
-        final var ticket = TicketGenerator.generateTicketNumber(parkingSlot);
-
-        return ticket;
+        return TicketGenerator.generateTicketNumber(parkingSlot);
     }
-    public Bill registerVehicleExit(final Ticket ticket) {
+
+    public Bill registerVehicleExit(final Vehicle vehicle) {
         //get the parking slot manager as per vehicle type from ticket
-        final var parkingLotManager = ParkingLotManagerFactory.getParkingLotManager(ticket.getParkingSlot().getParkedVehicle().get());
+        final var parkingLotManager = ParkingLotManagerFactory.getParkingLotManager(vehicle);
         double amount= -1;
         String message = "Invalid Ticket";
-        if( validateTicket.validateTicket(ticket, parkingLotManager)) {
+        if( validateTicket.validateTicket(vehicle, parkingLotManager)) {
             //get the total parking time from ticket
-            final var totalTime = Duration.between(ticket.getInTime(), LocalDateTime.now());
+            final var slotDetails = getSlotDetails(vehicle);
+            final var totalTime = Duration.between(LocalDateTime.parse(slotDetails.getIntime()), LocalDateTime.now());
 
             // calculate the amount to be paid
-             amount = costCalculator.calculateCost(ticket.getParkingSlot().getParkedVehicle().get().getVehicleType(), totalTime);
+             amount = costCalculator.calculateCost(vehicle.getVehicleType(), totalTime);
              message = "Please pay the amount: ";
             // free the slot
-            parkingLotManager.releaseParkingSpot(ticket.getParkingSlot().getSlotNumber());
+            parkingLotManager.releaseParkingSpot(slotDetails.getSlotNumber());
         }
 
         return new Bill(amount, message);
     }
 
-    public SpotDetails getParkingLotStatus() {
+    public List<ParkingLotStatus> getParkingLotStatus() {
        final var carManager = ParkingLotManagerFactory.getParkingLotManager(new Vehicle("TEMP_CAR", com.harsh.pratice.parkinglotdesign.model.VehicleType.CAR));
        final var bikeManager = ParkingLotManagerFactory.getParkingLotManager(new Vehicle("TEMP_BIKE", com.harsh.pratice.parkinglotdesign.model.VehicleType.BIKE));
 
        final var carSpot = carManager.getAllSpotsDetails();
-       final var bikeSpot = bikeManager.getAllSpotsDetails();
-       return new SpotDetails(carSpot,bikeSpot);
+       final var bikeSpot =bikeManager.getAllSpotsDetails();
+       return List.of(carSpot,bikeSpot);
     }
-    public SpotDetails getSlotStatus(final int slotNumber){
+    public SpotDetails getSlotStatus(){
         final var carManager = ParkingLotManagerFactory.getParkingLotManager(new Vehicle("TEMP_CAR", com.harsh.pratice.parkinglotdesign.model.VehicleType.CAR));
         final var bikeManager = ParkingLotManagerFactory.getParkingLotManager(new Vehicle("TEMP_BIKE", com.harsh.pratice.parkinglotdesign.model.VehicleType.BIKE));
 
-        final var carStatus = carManager.getSlotStatus(slotNumber);
-        final var bikeStatus = bikeManager.getSlotStatus(slotNumber);
-        return new SpotDetails(List.of(carStatus),List.of(bikeStatus));
+        final var carStatus = carManager.getSlotStatus();
+        final var bikeStatus = bikeManager.getSlotStatus();
+        return new SpotDetails(carStatus,bikeStatus);
 
     }
+    public ParkingSlot getSlotDetails( final Vehicle vehicle){
+        final var parkingLotManager = ParkingLotManagerFactory.getParkingLotManager(vehicle);
+        final var parkingSlotDetailsList = parkingLotManager.getSlotList();
+        return parkingSlotDetailsList.stream()
+                .filter(slot -> slot.isOccupied()
+                        && slot.getParkedVehicle().get().getVehicleNumber().equals(vehicle.getVehicleNumber()))
+                .findFirst()
+                .orElse(new ParkingSlot());
+     }
 }
